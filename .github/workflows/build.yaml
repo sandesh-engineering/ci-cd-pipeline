@@ -1,0 +1,38 @@
+name: Docker image build for both backend (Node.js) and frontend (Nextjs)
+
+on:
+  workflow_call:
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            sandesh1128/nodejs-api:${{ github.sha }}
+            sandesh1128/nodejs-api:latest
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            sandesh1128/nextjs-app:${{ github.sha }}
+            sandesh1128/nextjs-app:latest

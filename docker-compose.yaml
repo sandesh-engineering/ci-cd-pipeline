@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: sandesh1128/nextjs-app:latest
+
+    container_name: frontend
+
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      - backend
+
+  backend:
+    image: sandesh1128/nodejs-api:latest
+
+    container_name: backend
+
+    restart: unless-stopped
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/appdb
+
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17
+
+    container_name: postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

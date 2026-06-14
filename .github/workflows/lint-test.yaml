@@ -1,0 +1,63 @@
+# We could just separate the linting and testing for both backend and frontend but for now as this is only for mock purpose we let it be as it is  (Currently there is no actual tests or lint setup so only mock)
+
+name: Linting and testing for both Nodejs as well as Nextjs app
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Backend
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint Backend
+        working-directory: backend
+        run: npm run lint
+
+      - name: Install Frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint Frontend
+        working-directory: frontend
+        run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Backend
+        working-directory: backend
+        run: npm ci
+
+      - name: Run Backend Tests
+        working-directory: backend
+        run: npm test
+
+      - name: Install Frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Frontend Tests
+        working-directory: frontend
+        run: npm test
