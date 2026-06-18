@@ -3,7 +3,7 @@ import express from "express";
 
 const app = express();
 
-app.get("/health", (req, res) => {
+app.get("api/v1/health", (req, res) => {
   return res
     .status(200)
     .json({ message: "Server is healthy and receiving requests!" });

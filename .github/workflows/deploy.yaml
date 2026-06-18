@@ -17,10 +17,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
-            cd /home/ubuntu/app
+            cd /app
 
-            docker compose pull
+            git pull origin main
 
-            docker compose up -d
+            export IMAGE_TAG=${{ github.sha }}
 
-            docker image prune -af
+            docker compose -f docker-compose.prod.yaml pull 
+            docker compose -f ./docker-compose.prod.yaml up -d --remove-orphans
+            docker image prune -f
+
+            curl --fail http://localhost/api/v1/health

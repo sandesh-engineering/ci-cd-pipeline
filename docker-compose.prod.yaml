@@ -1,0 +1,71 @@
+services:
+  nginx:
+    image: nginx:alpine
+
+    container_name: nginx
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+    depends_on:
+      - frontend
+      - backend
+  frontend:
+    image: sandesh1128/nextjs-app:${IMAGE_TAG}
+
+    container_name: frontend
+
+    restart: unless-stopped
+
+    expose:
+      - "3000"
+
+    env_file:
+      - .env.frontend.prod
+
+    depends_on:
+      - backend
+
+  backend:
+    image: sandesh1128/nodejs-api:${IMAGE_TAG}
+
+    container_name: backend
+
+    restart: unless-stopped
+
+    expose:
+      - "3000"
+
+    env_file:
+      - .env.backend.prod
+
+    depends_on:
+      - postgres
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:17
+
+    container_name: postgres
+
+    restart: unless-stopped
+
+    env_file:
+      - .env.backend.prod
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
