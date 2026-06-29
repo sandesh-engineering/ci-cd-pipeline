@@ -3,15 +3,16 @@ name: CI/CD Pipeline
 # Since we don't want this to run automatically for now unless we need it
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   lint-test:
-    uses: ./.github/workflows/lint-test.yaml
+    uses: ./.github/workflows/lint-test.yml
 
   build:
     needs: lint-test
     uses: ./.github/workflows/build.yml
 
-  deploy:
-    needs: build
-    uses: ./.github/workflows/deploy.yml
+  # deploy:
+  #   needs: build
+  #   uses: ./.github/workflows/deploy.yml
