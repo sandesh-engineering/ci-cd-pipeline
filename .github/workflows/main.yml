@@ -3,7 +3,6 @@ name: CI/CD Pipeline
 # Since we don't want this to run automatically for now unless we need it
 on:
   workflow_dispatch:
-  push:
 
 jobs:
   lint-test:
