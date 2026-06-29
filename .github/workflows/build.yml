@@ -24,8 +24,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            sandesh1128/nodejs-api:${{ github.sha }}
-            sandesh1128/nodejs-api:latest
+            ${{secrets.DOCKERHUB_USERNAME}}/nodejs-api:${{ github.sha }}
+            ${{secrets.DOCKERHUB_USERNAME}}/nodejs-api:latest
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v6.18.0
@@ -34,5 +34,5 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            sandesh1128/nextjs-app:${{ github.sha }}
-            sandesh1128/nextjs-app:latest
+            ${{secrets.DOCKERHUB_USERNAME}}/nextjs-app:${{ github.sha }}
+            ${{secrets.DOCKERHUB_USERNAME}}/nextjs-app:latest
