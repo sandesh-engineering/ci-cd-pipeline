@@ -63,12 +63,6 @@ jobs:
             echo "STARTING CONTAINERS..."
             docker compose -f ./docker-compose.prod.yaml up -d --remove-orphans
 
-            docker compose ps
-
-            docker compose logs backend --tail=100
-
-            docker inspect backend --format='{{.State.ExitCode}} {{.State.Error}}'
-
             echo "CLEANING OLD IMAGES..."
             docker image prune -f
 
