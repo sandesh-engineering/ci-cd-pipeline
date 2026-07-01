@@ -17,14 +17,57 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
-            cd /app
+            set -e
 
-            git pull origin main
+            APP_DIR="/app"
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "CHECKING APPLICATION DIRECTORY..."
+              sudo mkdir -p "$APP_DIR"
+              sudo chown ubuntu:ubuntu "$APP_DIR"
+            fi
+
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "REPOSITORY NOT FOUND. CLONING..."
+
+              git clone https://github.com/${{ github.repository }} "$APP_DIR"
+            else
+              echo "REPOSITORY EXISTS. PULLING LATEST CHANGES..."
+
+              cd "$APP_DIR"
+              git fetch origin
+              git reset --hard origin/main
+            fi
+
+            cd "$APP_DIR"
+
+            echo "CREATING ENV FILES..."
+
+            cat > .env.backend.prod <<EOF
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            EOF
+
+            cat > .env.frontend.prod <<EOF
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            EOF
 
             export IMAGE_TAG=${{ github.sha }}
 
+            echo "PULLING LATEST IMAGES..."
             docker compose -f docker-compose.prod.yaml pull 
+
+            echo "STARTING CONTAINERS..."
             docker compose -f ./docker-compose.prod.yaml up -d --remove-orphans
+
+            echo "CLEANING OLD IMAGES..."
             docker image prune -f
 
+            sleep 15
+
+            echo "RUNNING HEALTH CHECK..."
             curl --fail http://localhost/api/v1/health
+
+            echo "DEPLOYMENT COMPLETED SUCCESSFULLY..."

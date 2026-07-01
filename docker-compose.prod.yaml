@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
 
     expose:
-      - "3000"
+      - "5000"
 
     env_file:
       - .env.backend.prod
