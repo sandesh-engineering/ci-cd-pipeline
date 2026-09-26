@@ -10,6 +10,14 @@ jobs:
     steps:
       - name: Deploy To EC2
         uses: appleboy/ssh-action@v1
+        env: 
+          IMAGE_TAG: ${{ github.sha }}
+          PORT: ${{ secrets.PORT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_DB: ${{ secrets.DATABASE_DB }} 
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -21,22 +29,11 @@ jobs:
 
             APP_DIR="/app"
 
+            echo "PREPARING APPLICATION DIRECTORY..."
+
             if [ ! -d "$APP_DIR" ]; then
-              echo "CHECKING APPLICATION DIRECTORY..."
               sudo mkdir -p "$APP_DIR"
               sudo chown ubuntu:ubuntu "$APP_DIR"
-            fi
-
-            if [ ! -d "$APP_DIR/.git" ]; then
-              echo "REPOSITORY NOT FOUND. CLONING..."
-
-              git clone https://github.com/${{ github.repository }} "$APP_DIR"
-            else
-              echo "REPOSITORY EXISTS. PULLING LATEST CHANGES..."
-
-              cd "$APP_DIR"
-              git fetch origin
-              git reset --hard origin/main
             fi
 
             cd "$APP_DIR"
@@ -44,31 +41,43 @@ jobs:
             echo "CREATING ENV FILES..."
 
             cat > .env.backend.prod <<EOF
-            PORT=${{ secrets.PORT }}
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            POSTGRES_DB=${{ secrets.DATABASE_DB }}
-            POSTGRES_USER=${{ secrets.DATABASE_USER }}
-            POSTGRES_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+            PORT=${PORT}
+            DATABASE_URL=${DATABASE_URL}
+            POSTGRES_DB=${DATABASE_DB}
+            POSTGRES_USER=${DATABASE_USER}
+            POSTGRES_PASSWORD=${DATABASE_PASSWORD}
             EOF
 
             cat > .env.frontend.prod <<EOF
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
             EOF
 
-            export IMAGE_TAG=${{ github.sha }}
+            echo "DEPLOYING IMAGE TAG: ${IMAGE_TAG}"
 
-            echo "PULLING LATEST IMAGES..."
-            docker compose -f docker-compose.prod.yaml pull 
+            echo "PULLING IMAGES..."
+            docker compose -f docker-compose.prod.yaml pull
 
             echo "STARTING CONTAINERS..."
-            docker compose -f ./docker-compose.prod.yaml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yaml up -d --remove-orphans
 
-            echo "CLEANING OLD IMAGES..."
-            docker image prune -f
+            echo "VERIFYING CONTAINERS..." 
+            docker compose -f docker-compose.prod.yaml ps 
+            
+            echo "VERIFYING DEPLOYED BACKEND IMAGE..." 
+            RUNNING_BACKEND_IMAGE=$(docker inspect \ "$(docker compose -f docker-compose.prod.yaml ps -q backend)" \ --format '{{.Config.Image}}') 
+            
+            EXPECTED_BACKEND_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/nodejs-api:${IMAGE_TAG}" 
 
-            sleep 15
-
-            echo "RUNNING HEALTH CHECK..."
-            curl --fail http://localhost/api/v1/health
-
-            echo "DEPLOYMENT COMPLETED SUCCESSFULLY..."
+            if [ "$RUNNING_BACKEND_IMAGE" !="$EXPECTED_BACKEND_IMAGE" ]; then 
+             echo "ERROR: DEPLOYED BACKEND IMAGE DOES NOT MATCH EXPECTED IMAGE."
+             echo "Expected: $EXPECTED_BACKEND_IMAGE" 
+             echo "Actual: $RUNNING_BACKEND_IMAGE" 
+             exit 1 
+            fi 
+            
+            echo "RUNNING HEALTH CHECK..." 
+            curl --fail http://localhost/api/v1/health 
+            
+            echo "CLEANING OLD IMAGES..." docker image prune -f 
+            
+            echo "DEPLOYMENT VERIFIED SUCCESSFULLY."
